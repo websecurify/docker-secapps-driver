@@ -6,7 +6,7 @@
 
 import argparse
 
-parser = argparse.ArgumentParser(description='SecApps tool executor')
+parser = argparse.ArgumentParser(description='SecApps Driver')
 
 parser.add_argument('tool', metavar='tool', type=str, choices=['foundation', 'scanner', 'recon', 'wpscanner'], help='the tool to be executed')
 parser.add_argument('target', metavar='target', type=str, help='the target to be tested')
@@ -21,11 +21,18 @@ args = parser.parse_args()
 # ---
 # ---
 
+import logging
+
 if args.debug:
-	import logging
-	
 	logging.basicConfig(level=logging.DEBUG)
 	
+# ---
+# ---
+# ---
+
+import os
+import sys
+
 # ---
 # ---
 # ---
@@ -40,13 +47,11 @@ else:
 	
 display.start()
 
+if args.display_backend == 'vnc':
+	os.system('/usr/bin/fluxbox -display :%s &' % display.display)
+	
 # ---
 # ---
-# ---
-
-import os
-import sys
-
 # ---
 
 from time import sleep
@@ -61,14 +66,33 @@ from selenium.webdriver.common.action_chains import ActionChains
 # ---
 # ---
 
+mimes = [
+	'application/octet-stream',
+	'application/csv',
+	'text/csv'
+	'application/xml',
+	'text/xml'
+	'application/html',
+	'text/html',
+	'application/json',
+	'text/json'
+]
+
+mimes += ['data:%s' % mime for mime in mimes]
+
+# ---
+# ---
+# ---
+
 profile = webdriver.FirefoxProfile()
 
 profile.add_extension(extension='/tmp/websecurify-5.5.0-fx.xpi')
 
 profile.set_preference('browser.download.folderList', 2)
+profile.set_preference('browser.helperApps.alwaysAsk.force', False)
 profile.set_preference('browser.download.manager.showWhenStarting', False)
 profile.set_preference('browser.download.dir', '/output')
-profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 'application/csv,application/xml,application/html,application/json')
+profile.set_preference('browser.helperApps.neverAsk.saveToDisk', ','.join(mimes))
 
 # ---
 # ---
@@ -76,7 +100,7 @@ profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 'application/cs
 
 browser=webdriver.Firefox(firefox_profile=profile)
 
-browser.get('https://secapps.com/apps/' + args.tool + '/' + ('access-token=' + args.access_token if args.access_token else ''))
+browser.maximize_window()
 
 # ---
 # ---
@@ -92,6 +116,8 @@ def scanner():
 	while True:
 		status = browser.find_element_by_id('scan-status').text
 		
+		# ---
+		
 		sys.stdout.write('[*] ' + status + '\n')
 		sys.stdout.flush()
 		
@@ -100,20 +126,24 @@ def scanner():
 		if status.find('100%') > 0:
 			break
 			
+		# ---
+		
 		sleep(5)
 		
 	# ---
 	
-	ActionChains(browser).move_to_element(browser.find_element_by_id('toolbar-item-report')).perform()
+	chain = ActionChains(browser)
 	
 	# ---
 	
+	chain.move_to_element(browser.find_element_by_id('toolbar-item-report')).perform()
+	
 	for rf in args.report_format:
-		print '[*] exporting to', rf
+		chain.move_to_element(browser.find_element_by_id('toolbar-item-export-' + rf)).click().perform()
 		
 		# ---
 		
-		browser.find_element_by_id('toolbar-item-export-' + rf).click()
+		sleep(1)
 		
 	# ---
 	
@@ -133,11 +163,35 @@ def scanner():
 # ---
 
 if __name__ == '__main__':
-	{
-		'foundation': scanner,
-		'scanner': scanner,
-		'recon': scanner,
-		'wpscanner': scanner
-	}.get(args.tool)()
+	try:
+		# Navigate to the selected tool, optionaly using the provided token.
+		
+		browser.get('https://secapps.com/apps/' + args.tool + '/' + ('?access-token=' + args.access_token if args.access_token else ''))
+		
+		# ---
+		
+		# Get rid of any automatic popups such as help and welcome screens.
+		
+		browser.execute_script('document.location.hash = "#"')
+		
+		# ---
+		
+		# Sleep for a bit to ensure that the environment is ready.
+		
+		sleep(5)
+		
+		# ---
+		
+		# Execute selenium script based on the selected tool.
+		
+		{
+			'foundation': scanner,
+			'scanner': scanner,
+			'recon': scanner,
+			'spider': scanner,
+			'wpscanner': scanner
+		}.get(args.tool)()
+		
+	except (KeyboardInterrupt, SystemExit): pass
 	
 # ---
