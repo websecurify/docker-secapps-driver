@@ -1,18 +1,16 @@
-FROM selenium/standalone-firefox:latest
+FROM selenium/standalone-firefox-debug:2.47.1
 
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN sudo apt-get update -qqy && sudo apt-get install -qqy tightvncserver python-pip
+RUN sudo apt-get update -qqy && sudo apt-get install -qqy fluxbox tightvncserver python-pip
 RUN sudo pip install selenium pyvirtualdisplay
 
-ENV WEBSECURIFY_EXTENSION websecurify-5.5.0-fx.xpi
+RUN wget -q https://addons.mozilla.org/firefox/downloads/file/290864/websecurify-5.5.0-fx.xpi -O /tmp/websecurify-5.5.0-fx.xpi
 
-RUN wget -q "https://addons.mozilla.org/firefox/downloads/file/290864/${WEBSECURIFY_EXTENSION}" -O "/tmp/${WEBSECURIFY_EXTENSION}"
+RUN echo '[link]\nXvnc=/tmp/Xvnc' > ~/.easyprocess.cfg
+RUN echo '#!/bin/sh\n/usr/bin/Xvnc -rfbauth ~/.vnc/passwd $@' > /tmp/Xvnc && chmod +x /tmp/Xvnc
 
-ENV VNC_FULL_PASSWORD full
-ENV VNC_VIEW_PASSWORD view
-
-RUN mkdir -p ~/.vnc && echo "${VNC_FULL_PASSWORD}\n${VNC_VIEW_PASSWORD}" | vncpasswd -f > ~/.vnc/passwd
+RUN mkdir -p ~/.vnc && echo password | vncpasswd -f > ~/.vnc/passwd && chmod 600 ~/.vnc/passwd
 
 RUN sudo mkdir /output
 
