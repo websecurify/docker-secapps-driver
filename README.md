@@ -1,4 +1,7 @@
-	
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/e18b2f5c5b71488e8d89d6c0d5fee7e5)](https://www.codacy.com/app/Websecurify/docker-secapps-driver?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=websecurify/docker-secapps-driver&amp;utm_campaign=Badge_Grade)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/websecurify.svg?logo=twitter)](https://twitter.com/websecurify)
+
+
 	 ________  ________  ___  ___      ___ _______   ________     
 	|\   ___ \|\   __  \|\  \|\  \    /  /|\  ___ \ |\   __  \    
 	\ \  \_|\ \ \  \|\  \ \  \ \  \  /  / | \   __/|\ \  \|\  \   
